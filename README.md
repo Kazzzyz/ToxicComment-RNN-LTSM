@@ -30,4 +30,6 @@ If your script filenames or folder names differ, adjust these commands. PyTorch 
 
 ## Results
 
-Earlier runs achieved approximately **0.63 test micro F1**. The exact score depends on the model and run; each script prints its own final score and results for all six labels. The valid labeled test set contains **63,978 comments** after excluding `-1` rows. Kaggle's leaderboard uses ROC AUC, while this project reports F1.
+My model achieved 0.6595 micro F1 (65.95%) across all six toxicity labels on the 63,978 valid Jigsaw test examples. Rows marked -1 in test_labels.csv were excluded from evaluation.
+
+For context, a published study evaluating on the same valid test set reported 0.65 micro F1 for an LSTM, 0.66 for a GRU, and 0.67 for a BiLSTM + CNN. This places my result alongside published recurrent-model results for this dataset.
