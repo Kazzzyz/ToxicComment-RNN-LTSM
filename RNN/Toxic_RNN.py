@@ -1,3 +1,4 @@
+
 import torch 
 import torch.nn as nn
 import matplotlib.pyplot as plt
@@ -13,15 +14,16 @@ from sklearn.metrics import f1_score ,classification_report
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
 
+torch.manual_seed(42) 
 
 #hyperparameters
-embed_dim = 100
+embed_dim = 350
 input_size=embed_dim
 hidden_size = 250
-num_layers=1
+num_layers=2
 learning_rate = 0.001
-batch_size = 100
-num_epochs = 6
+batch_size = 64
+num_epochs = 10
 output_size = 6 
 
 label_columns = [
@@ -37,6 +39,7 @@ label_columns = [
 df=pd.read_csv("train.csv")
 test_df = pd.read_csv("test.csv")
 test_labels_df = pd.read_csv("test_labels.csv")
+
   
 df['Tokenized']=df['comment_text'].apply(lambda x: nltk.word_tokenize(x.lower()))
 test_df['Tokenized']=test_df['comment_text'].apply(lambda x: nltk.word_tokenize(x.lower()))
@@ -193,6 +196,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 #Training loop
 n_total_steps=len(train_loader)
 for epoch in range(num_epochs):
+    model.train()
     for i, (padded_ids, labels) in enumerate(train_loader):
         token_ids = padded_ids.to(device) 
         labels = labels.to(device) 
@@ -206,9 +210,28 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-        if (i+1) % 100 == 0:
+        if (i+1) % 64 == 0:
             print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{n_total_steps}], Loss: {loss.item():.4f}')
 
+    model.eval()
+    all_predictions = []
+    all_labels = []
+
+    with torch.no_grad():
+        for padded_ids, labels in test_loader:
+            outputs = model(padded_ids.to(device))
+            predictions = (torch.sigmoid(outputs) >= 0.5).int()
+
+            all_predictions.append(predictions.cpu())
+            all_labels.append(labels.int())
+
+    all_predictions = torch.cat(all_predictions).numpy()
+    all_labels = torch.cat(all_labels).numpy()
+
+    epoch_f1 = f1_score(
+        all_labels, all_predictions, average="micro", zero_division=0
+    )
+    print(f"Epoch [{epoch+1}/{num_epochs}] Test micro F1: {epoch_f1:.4f}")
 
 
 # Evaluation
@@ -274,4 +297,4 @@ print(
 )
 
 
-torch.save(model.state_dict(), "rnn_Final.pth")
+#torch.save(model.state_dict(), "rnn_Final.pth")
